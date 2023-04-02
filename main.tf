@@ -119,34 +119,36 @@ resource "aws_launch_template" "main" {
   image_id               = data.aws_ami.centos8.id
   instance_type          = var.instance_type
   vpc_security_group_ids = [aws_security_group.main.id]
+  user_data              = base64encode(templatefile("${path.module}/user-data.sh", { component = var.component, env = var.env }))
+
   iam_instance_profile {
     arn = aws_iam_instance_profile.profile.arn
   }
 }
 
-#resource "aws_autoscaling_group" "asg" {
-#  name                = "${var.env}-${var.component}-asg"
-#  max_size            = var.max_size
-#  min_size            = var.min_size
-#  desired_capacity    = var.desired_capacity
-#  force_delete        = true
-#  vpc_zone_identifier = var.subnet_ids
-##  target_group_arns   = [aws_lb_target_group.target_group.arn]
-#
-#  launch_template {
-#    id      = aws_launch_template.main.id
-#    version = "$Latest"
-#  }
-#
-#  dynamic "tag" {
-#    for_each = local.all_tags
-#    content {
-#      key                 = tag.value.key
-#      value               = tag.value.value
-#      propagate_at_launch = true
-#    }
-#  }
-#}
+resource "aws_autoscaling_group" "asg" {
+  name                = "${var.env}-${var.component}-asg"
+  max_size            = var.max_size
+  min_size            = var.min_size
+  desired_capacity    = var.desired_capacity
+  force_delete        = true
+  vpc_zone_identifier = var.subnet_ids
+#  target_group_arns   = [aws_lb_target_group.target_group.arn]
+
+  launch_template {
+    id      = aws_launch_template.main.id
+    version = "$Latest"
+  }
+
+  dynamic "tag" {
+    for_each = local.all_tags
+    content {
+      key                 = tag.value.key
+      value               = tag.value.value
+      propagate_at_launch = true
+    }
+  }
+}
 
 #resource "aws_route53_record" "app" {
 #  zone_id = "Z00609824R2L4GMJAHPM"
